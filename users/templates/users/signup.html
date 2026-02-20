@@ -16,5 +16,8 @@
 			<br /><br />
 			<button type="submit">Signup</button>
 		</form>
+		{% for message in messages %}
+		<p style="color: red;">{{ message }}</p>
+		{% endfor %}
 	</body>
 </html>
