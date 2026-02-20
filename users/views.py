@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.views.decorators.http import require_POST
 
 
 def signup_view(request):
@@ -51,11 +52,12 @@ def login_view(request):
     
     return render(request, 'users/login.html')
 
+@require_POST
+@login_required
 def logout_view(request):
     logout(request)
     return redirect('login')
 
 @login_required
 def home_view(request):  
-    print('---------',vars(request.user._wrapped))
     return render(request, 'users/home.html')
