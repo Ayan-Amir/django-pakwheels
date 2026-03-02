@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Product Detail</title>
+	</head>
+	<body>
+		<a href="{% url 'product_list' %}">Back to Product List</a>
+		<h2>Product Detail</h2>
+		<p><strong>Price:</strong> {{ product.price }}</p>
+		<p><strong>Location:</strong> {{ product.location }}</p>
+		<p><strong>Category:</strong> {{ product.category.name }}</p>
+		<p><strong>Seller:</strong> {{ product.user.username }}</p>
+		<p><strong>Status:</strong> {{ product.status }}</p>
+		<p><strong>Description:</strong> {{ product.description }}</p>
+		<hr />
+
+		<h3>Images</h3>
+
+		{% for img in product.images.all %}
+		<img src="{{ img.image.url }}" width="200" />
+		{% empty %}
+		<p>No images available.</p>
+		{% endfor %}
+
+		<hr />
+
+		<small>Posted {{ product.created_at }}</small>
+	</body>
+</html>
