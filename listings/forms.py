@@ -14,4 +14,3 @@ class ProductForm(forms.ModelForm):
             "status",
             "description",
         ]
-        
