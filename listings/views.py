@@ -12,14 +12,13 @@ def product_list(request):
     max_price = request.GET.get('max_price')
     location = request.GET.get('location')
     
-    products = Product.objects.select_related('user', 'category').all()
+    products = Product.objects.select_related('category').all()
     
     if query:
         products = products.filter(
             Q(title__icontains=query) |
             Q(description__icontains=query) |
-            Q(location__icontains=query) |
-            Q(user__username__icontains=query)
+            Q(location__icontains=query)
         )
         
     if category:
@@ -40,7 +39,7 @@ def product_list(request):
 
 @login_required
 def product_detail(request, id):
-    product = get_object_or_404(Product.objects.select_related('user', 'category'), id=id)
+    product = get_object_or_404(Product.objects.select_related('category'), id=id)
     is_favorited = Favorite.objects.filter(user=request.user, product=product).exists()
     has_reviewed = Review.objects.filter(user=request.user, product=product).exists()
 
@@ -57,9 +56,7 @@ def add_product(request):
         form = ProductForm(request.POST)
 
         if form.is_valid():
-            product = form.save(commit=False)
-            product.user = request.user
-            product.save()
+            product = form.save()
 
             return redirect("home")
 

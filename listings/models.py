@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Category(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -26,7 +26,6 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="products")
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name="products")
     
     def __str__(self):

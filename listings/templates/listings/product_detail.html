@@ -10,7 +10,6 @@
 		<p><strong>Price:</strong> {{ product.price }}</p>
 		<p><strong>Location:</strong> {{ product.location }}</p>
 		<p><strong>Category:</strong> {{ product.category.name }}</p>
-		<p><strong>Seller:</strong> {{ product.user.username }}</p>
 		<p><strong>Status:</strong> {{ product.status }}</p>
 		<p><strong>Description:</strong> {{ product.description }}</p>
 		<form method="post" action="{% url 'toggle_favorite' product.id %}">
