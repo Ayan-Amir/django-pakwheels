@@ -1,22 +1,54 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .forms import ProductForm
-from .models import Product
+from .forms import ProductForm, ReviewForm
+from .models import Product, Category, Favorite, Review
+from django.db.models import Q
 
 
 def product_list(request):
-    query = request.GET.get('query')
+    query = request.GET.get('query') or ''
+    category = request.GET.get('category')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    location = request.GET.get('location')
     
     products = Product.objects.select_related('user', 'category').all()
     
     if query:
-        products = products.filter(title__icontains=query)
+        products = products.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(location__icontains=query) |
+            Q(user__username__icontains=query)
+        )
         
-    return render(request, 'listings/product_list.html', {'products': products, 'query': query})
+    if category:
+        products = products.filter(category_id=category)
+        
+    if min_price:
+        products = products.filter(price__gte=min_price)
+        
+    if max_price:
+        products = products.filter(price__lte=max_price)
+        
+    if location:
+        products = products.filter(location__icontains=location)
+        
+    categories = Category.objects.all()
+        
+    return render(request, 'listings/product_list.html', {'products': products, 'query': query,  'categories': categories })
 
+@login_required
 def product_detail(request, id):
     product = get_object_or_404(Product.objects.select_related('user', 'category'), id=id)
-    return render(request, 'listings/product_detail.html', {'product': product})
+    is_favorited = Favorite.objects.filter(user=request.user, product=product).exists()
+    has_reviewed = Review.objects.filter(user=request.user, product=product).exists()
+
+    return render(request, 'listings/product_detail.html', {
+        'product': product,
+        'is_favorited': is_favorited,
+        'has_reviewed': has_reviewed,
+    })
 
 
 @login_required
@@ -29,9 +61,48 @@ def add_product(request):
             product.user = request.user
             product.save()
 
-            return redirect("home")   # redirect after submit
+            return redirect("home")
 
     else:
         form = ProductForm()
 
     return render(request, "listings/add_product.html", {"form": form})
+
+
+@login_required
+def toggle_favorite(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    favorite, created = Favorite.objects.get_or_create(
+        user=request.user,
+        product=product
+    )
+
+    if not created:
+        favorite.delete()
+
+    return redirect("product_detail", id=product.id)
+
+
+@login_required
+def add_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if Review.objects.filter(user=request.user, product=product).exists():
+        return redirect("product_detail", id=product.id)
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.product = product
+            review.save()
+            return redirect("product_detail", id=product.id)
+    else:
+        form = ReviewForm()
+
+    return render(request, "listings/add_review.html", {
+        "form": form,
+        "product": product
+    })

@@ -7,7 +7,17 @@
 		<h2>Product List</h2>
 		<form method="GET">
 			<input type="text" name="query" placeholder="Search products..." value="{{ query }}" />
-			<button type="submit">Search</button>
+            <input type="text" name="location" placeholder="Location..." value="{{ location }}" />
+            <input type="number" name="min_price" placeholder="Min price..." value="{{ min_price }}" />
+            <input type="number" name="max_price" placeholder="Max price..." value="{{ max_price }}" />
+            <select name="category">
+                <option value="">All categories</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            
+			<button type="submit">Apply filters</button>
 		</form>
 		<ul>
 			{% for product in products %}

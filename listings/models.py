@@ -57,7 +57,9 @@ class Favorite(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="favorites")
     
     class Meta:
-        unique_together = ["user", "product"]
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'product'], name='unique_user_product_favorite')
+        ]
     
     def __str__(self):
         return f"{self.user.username} → {self.product.title}"
@@ -71,6 +73,11 @@ class Review(models.Model):
     review = models.TextField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'product'], name='unique_user_product_review')
+        ]
 
     def __str__(self):
         return f"{self.product.title} - {self.rating}"
