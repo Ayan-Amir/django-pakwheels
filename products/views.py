@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from .forms import ProductForm, ReviewForm
 from .models import Product, Category, Favorite, Review
 from django.db.models import Q
+
+PRODUCTS_PER_PAGE = 1
 
 
 def product_list(request):
@@ -34,8 +37,16 @@ def product_list(request):
         products = products.filter(location__icontains=location)
         
     categories = Category.objects.all()
+
+    paginator = Paginator(products, PRODUCTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
         
-    return render(request, 'listings/product_list.html', {'products': products, 'query': query,  'categories': categories })
+    return render(request, 'products/product_list.html', {
+        'page_obj': page_obj,
+        'query': query,
+        'categories': categories,
+    })
 
 @login_required
 def product_detail(request, id):
@@ -43,7 +54,7 @@ def product_detail(request, id):
     is_favorited = Favorite.objects.filter(user=request.user, product=product).exists()
     has_reviewed = Review.objects.filter(user=request.user, product=product).exists()
 
-    return render(request, 'listings/product_detail.html', {
+    return render(request, 'products/product_detail.html', {
         'product': product,
         'is_favorited': is_favorited,
         'has_reviewed': has_reviewed,
@@ -58,12 +69,12 @@ def add_product(request):
         if form.is_valid():
             product = form.save()
 
-            return redirect("home")
+            return redirect("product_list")
 
     else:
         form = ProductForm()
 
-    return render(request, "listings/add_product.html", {"form": form})
+    return render(request, "products/add_product.html", {"form": form})
 
 
 @login_required
@@ -99,7 +110,8 @@ def add_review(request, product_id):
     else:
         form = ReviewForm()
 
-    return render(request, "listings/add_review.html", {
+    return render(request, "products/add_review.html", {
         "form": form,
         "product": product
     })
+    

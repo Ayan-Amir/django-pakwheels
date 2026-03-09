@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Product List</title>
+	</head>
+	<body>
+		<h2>Product List</h2>
+		<a href="{% url 'home' %}">Back to Home</a>
+		<form method="GET">
+			<input type="text" name="query" placeholder="Search products..." value="{{ query }}" />
+			<input type="text" name="location" placeholder="Location..." value="{{ location }}" />
+			<input type="number" name="min_price" placeholder="Min price..." value="{{ min_price }}" />
+			<input type="number" name="max_price" placeholder="Max price..." value="{{ max_price }}" />
+			<select name="category">
+				<option value="">All categories</option>
+				{% for category in categories %}
+				<option value="{{ category.id }}">{{ category.name }}</option>
+				{% endfor %}
+			</select>
+
+			<button type="submit">Apply filters</button>
+		</form>
+		<a href="{% url 'add_product' %}">
+			<button>Add Product</button>
+		</a>
+		<ul>
+			{% for product in page_obj %}
+			<li>{{ product.id }}</li>
+			<a href="{% url 'product_detail' product.id %}">
+				<li>{{ product.title }}</li>
+			</a>
+			<li>{{ product.price }}</li>
+			<li>{{ product.location }}</li>
+			<li>{{ product.status }}</li>
+			<li>{{ product.description }}</li>
+			<li>{{ product.category.name }}</li>
+			{% endfor %}
+		</ul>
+		<div>
+			{% if page_obj.has_previous %}
+			<a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+			{% endif %}
+
+			<span> Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} </span>
+
+			{% if page_obj.has_next %}
+			<a href="?page={{ page_obj.next_page_number }}">Next</a>
+			{% endif %}
+		</div>
+	</body>
+</html>

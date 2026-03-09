@@ -13,6 +13,7 @@ class ProductForm(forms.ModelForm):
             "lng",
             "status",
             "description",
+            "category",
         ]
 
 

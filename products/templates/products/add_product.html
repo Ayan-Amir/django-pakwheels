@@ -5,6 +5,7 @@
 	</head>
 	<body>
 		<h2>Add Product</h2>
+		<a href="{% url 'product_list' %}">Back to Product List</a>
 
 		<form method="POST">
 			{% csrf_token %} {{ form.as_p }}
