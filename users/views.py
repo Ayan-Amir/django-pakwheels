@@ -20,6 +20,10 @@ def signup_view(request):
             messages.error(request, 'Username and password are required.')
             return render(request, 'users/signup.html')
 
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username is already taken. Please choose a different one.')
+            return render(request, 'users/signup.html')
+
         user = User(username=username)
         try:
             validate_password(password, user=user)
@@ -28,11 +32,7 @@ def signup_view(request):
                 messages.error(request, error)
             return render(request, 'users/signup.html')
 
-        try:
-            User.objects.create_user(username=username, password=password)
-        except IntegrityError:
-            messages.error(request, 'Username is already taken. Please choose a different one.')
-            return render(request, 'users/signup.html')
+        User.objects.create_user(username=username, password=password)
 
         return redirect('login')
 
