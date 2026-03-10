@@ -2,9 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django_extensions.db.models import TimeStampedModel
 
 
-class Profile(models.Model):
+class Profile(TimeStampedModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)

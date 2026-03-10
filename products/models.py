@@ -4,13 +4,14 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django_extensions.db.models import TimeStampedModel
 from .choices import STATUS_CHOICES
 
-class Category(models.Model):
+
+class Category(TimeStampedModel):
     name = models.CharField(max_length=255, unique=True)
     
     def __str__(self):
         return self.name
 
-class Product(models.Model):
+class Product(TimeStampedModel):
     location = models.CharField(max_length=255)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
     title = models.CharField(max_length=255, db_index=True)
@@ -24,14 +25,14 @@ class Product(models.Model):
         return self.title
     
 
-class ProductImage(models.Model):
+class ProductImage(TimeStampedModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     image = models.ImageField(upload_to='product_images/')
     
     def __str__(self):
         return f"{self.product.title} - {self.image.name}"
 
-class ProductInfo(models.Model):
+class ProductInfo(TimeStampedModel):
     makes = models.CharField(max_length=255)
     mileage = models.CharField(max_length=255)
     model = models.CharField(max_length=255)
@@ -40,7 +41,7 @@ class ProductInfo(models.Model):
     def __str__(self):
         return f"{self.makes} {self.model}"
     
-class Favorite(models.Model):
+class Favorite(TimeStampedModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="favorites")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites")
     
@@ -52,7 +53,7 @@ class Favorite(models.Model):
     def __str__(self):
         return f"{self.user.username} → {self.product.title}"
 
-class Review(models.Model):
+class Review(TimeStampedModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], null=True, blank=True)
