@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_GET
+from django.db.models import Q
+
 from .forms import ProductForm, ReviewForm
 from .models import Product, Category, Favorite, Review
-from django.db.models import Q
 
 PRODUCTS_PER_PAGE = 1
 
 
+@require_GET
 def product_list(request):
     query = request.GET.get('query') or ''
     category = request.GET.get('category')
@@ -49,6 +52,7 @@ def product_list(request):
     })
 
 @login_required
+@require_GET
 def product_detail(request, id):
     product = get_object_or_404(Product.objects.select_related('category'), id=id)
     is_favorited = Favorite.objects.filter(user=request.user, product=product).exists()
@@ -114,4 +118,3 @@ def add_review(request, product_id):
         "form": form,
         "product": product
     })
-    

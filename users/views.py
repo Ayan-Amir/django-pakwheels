@@ -9,6 +9,7 @@ from django.db import IntegrityError
 from django.views.decorators.http import require_POST
 
 from .forms import UserInfoForm, ProfileInfoForm, ProfilePictureForm, PasswordChangeForm
+from .models import Profile
 
 
 def signup_view(request):
@@ -32,7 +33,8 @@ def signup_view(request):
                 messages.error(request, error)
             return render(request, 'users/signup.html')
 
-        User.objects.create_user(username=username, password=password)
+        user = User.objects.create_user(username=username, password=password)
+        Profile.objects.create(user=user)
 
         return redirect('login')
 
@@ -69,7 +71,7 @@ def home_view(request):
 
 @login_required
 def profile_view(request):
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
 
     user_form = UserInfoForm(instance=request.user)
     profile_form = ProfileInfoForm(instance=profile)
@@ -87,7 +89,7 @@ def profile_view(request):
 @login_required
 @require_POST
 def update_profile_info_view(request):
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
 
     user_form = UserInfoForm(request.POST, instance=request.user)
     profile_form = ProfileInfoForm(request.POST, instance=profile)
@@ -108,7 +110,7 @@ def update_profile_info_view(request):
 @login_required
 @require_POST
 def update_profile_picture_view(request):
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
     picture_form = ProfilePictureForm(request.POST, request.FILES, instance=profile)
 
     if picture_form.is_valid():
@@ -125,7 +127,7 @@ def update_profile_picture_view(request):
 @login_required
 @require_POST
 def remove_profile_picture_view(request):
-    profile = request.user.profile
+    profile, _ = Profile.objects.get_or_create(user=request.user)
 
     if profile.profile_picture:
         profile.profile_picture.delete(save=True)

@@ -6,3 +6,4 @@ from .models import Profile
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone_number', 'city')
     search_fields = ('user__username', 'city')
+    raw_id_fields = ('user',)
