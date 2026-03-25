@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Product Detail</title>
+	</head>
+	<body>
+		<a href="{% url 'product_list' %}">Back to Product List</a>
+		<h2>Product Detail</h2>
+		<p><strong>Title:</strong> {{ product.title }}</p>
+		<p><strong>Price:</strong> {{ product.price }}</p>
+		<p><strong>Location:</strong> {{ product.location }}</p>
+		<p><strong>Category:</strong> {{ product.category.name }}</p>
+		<p><strong>Status:</strong> {{ product.status }}</p>
+		<p><strong>Description:</strong> {{ product.description }}</p>
+		<form method="post" action="{% url 'toggle_favorite' product.id %}">
+			{% csrf_token %}
+			<button type="submit">{% if is_favorited %}Unfavorite ❤️{% else %}Favorite 🤍{% endif %}</button>
+		</form>
+		<hr />
+
+		<h3>Images</h3>
+
+		{% for img in product.images.all %}
+		<img src="{{ img.image.url }}" width="200" />
+		{% empty %}
+		<p>No images available.</p>
+		{% endfor %}
+
+		<hr />
+
+		<small>Posted {{ product.created_at }}</small>
+
+		<hr />
+
+		<h3>Reviews</h3>
+
+		{% for review in product.reviews.all %}
+		<div style="border: 1px solid #ccc; padding: 10px; margin: 5px">
+			<strong>{{ review.user.username }}</strong>
+			<p>Rating: {{ review.rating }}/5</p>
+			<p>{{ review.review }}</p>
+			<small>{{ review.created_at }}</small>
+		</div>
+		{% empty %}
+		<p>No reviews yet.</p>
+		{% endfor %}
+		<hr />
+	{% if user.is_authenticated %}
+		{% if has_reviewed %}
+		<p>You have already reviewed this product.</p>
+		{% else %}
+		<a href="{% url 'add_review' product.id %}">Add Review</a>
+		{% endif %}
+	{% endif %}
+	</body>
+</html>
