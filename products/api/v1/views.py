@@ -4,8 +4,8 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_GET
 from django.db.models import Q
 
-from .forms import ProductForm, ReviewForm
-from .models import Product, Category, Favorite, Review
+from products.forms import ProductForm, ReviewForm
+from products.models import Product, Category, Favorite, Review
 
 PRODUCTS_PER_PAGE = 1
 

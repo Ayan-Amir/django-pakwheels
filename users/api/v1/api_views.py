@@ -6,8 +6,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Profile
-from .serializers import (
+from users.models import Profile
+from users.api.v1.serializers import (
     LoginSerializer,
     PasswordChangeSerializer,
     SignupSerializer,

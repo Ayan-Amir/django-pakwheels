@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Category, Favorite, Product, ProductImage, ProductInfo, Review
+from products.models import Category, Favorite, Product, ProductImage, ProductInfo, Review
 
 
 class CategorySerializer(serializers.ModelSerializer):
