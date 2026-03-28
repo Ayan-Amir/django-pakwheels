@@ -1,5 +1,5 @@
 from django.urls import path
-from users.api_views import (
+from users.api.v1.api_views import (
     ChangePasswordAPIView,
     LoginAPIView,
     LogoutAPIView,
@@ -9,10 +9,10 @@ from users.api_views import (
 )
 
 urlpatterns = [
-    path('auth/signup/', SignupAPIView.as_view(), name='api_signup'),
-    path('auth/login/', LoginAPIView.as_view(), name='api_login'),
-    path('auth/logout/', LogoutAPIView.as_view(), name='api_logout'),
-    path('users/me/', MeAPIView.as_view(), name='api_me'),
-    path('users/me/change-password/', ChangePasswordAPIView.as_view(), name='api_change_password'),
-    path('users/me/profile-picture/', ProfilePictureAPIView.as_view(), name='api_profile_picture'),
+    path('signup/', SignupAPIView.as_view(), name='signup'),
+    path('login/', LoginAPIView.as_view(), name='login'),
+    path('logout/', LogoutAPIView.as_view(), name='logout'),
+    path('', MeAPIView.as_view(), name='me'),
+    path('change-password/', ChangePasswordAPIView.as_view(), name='change_password'),
+    path('profile-picture/', ProfilePictureAPIView.as_view(), name='profile_picture'),
 ]

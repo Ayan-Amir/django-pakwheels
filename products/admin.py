@@ -20,7 +20,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'price', 'location', 'status')
+    list_display = ('id', 'title', 'category', 'price', 'location', 'status')
     list_filter = ('status', 'category')
     search_fields = ('title', 'description', 'location')
     list_editable = ('status',)

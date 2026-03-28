@@ -9,10 +9,10 @@ from products.api.v1.api_views import (
 )
 
 urlpatterns = [
-    path('categories/', CategoryListAPIView.as_view(), name='api_category_list'),
-    path('categories/<int:pk>/', CategoryDetailAPIView.as_view(), name='api_category_detail'),
-    path('products/', ProductListCreateAPIView.as_view(), name='api_product_list'),
-    path('products/<int:pk>/', ProductDetailAPIView.as_view(), name='api_product_detail'),
-    path('products/<int:pk>/favorite/', ProductFavoriteAPIView.as_view(), name='api_product_favorite'),
-    path('products/<int:pk>/reviews/', ProductReviewAPIView.as_view(), name='api_product_reviews'),
+    path('categories/', CategoryListAPIView.as_view(), name='categories'),
+    path('categories/<int:pk>/', CategoryDetailAPIView.as_view(), name='category_detail'),
+    path('', ProductListCreateAPIView.as_view(), name='product_list'),
+    path('<int:pk>/', ProductDetailAPIView.as_view(), name='product_detail'),
+    path('<int:pk>/favorite/', ProductFavoriteAPIView.as_view(), name='product_favorite'),
+    path('<int:pk>/reviews/', ProductReviewAPIView.as_view(), name='product_reviews'),
 ]

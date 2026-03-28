@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,6 +24,7 @@ class SignupAPIView(APIView):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        
         return Response(
             {'detail': 'Account created.', 'username': user.username},
             status=status.HTTP_201_CREATED,
@@ -53,8 +54,6 @@ class LoginAPIView(APIView):
 class LogoutAPIView(APIView):
     """Clear the session."""
 
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -62,8 +61,6 @@ class LogoutAPIView(APIView):
 
 class MeAPIView(APIView):
     """Return or update the current user + profile (no generic class — one method per HTTP verb)."""
-
-    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         Profile.objects.get_or_create(user=request.user)
@@ -87,8 +84,6 @@ class MeAPIView(APIView):
 
 class ChangePasswordAPIView(APIView):
     """Verify current password, then set a new one (keeps session logged in)."""
-
-    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = PasswordChangeSerializer(data=request.data)
@@ -126,8 +121,6 @@ class ChangePasswordAPIView(APIView):
 
 class ProfilePictureAPIView(APIView):
     """Upload (PATCH) or remove (DELETE) the profile image."""
-
-    permission_classes = [IsAuthenticated]
 
     def patch(self, request):
         profile, _ = Profile.objects.get_or_create(user=request.user)

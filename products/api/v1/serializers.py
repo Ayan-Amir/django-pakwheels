@@ -30,7 +30,7 @@ class ReviewUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username')
 
 
-class ReviewSerializer(serializers.ModelSerializer):
+class ProductReviewSerializer(serializers.ModelSerializer):
     user = ReviewUserSerializer(read_only=True)
 
     class Meta:
@@ -41,9 +41,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         request = self.context.get('request')
         product = self.context.get('product')
-        if request and request.user.is_authenticated and product:
-            if Review.objects.filter(user=request.user, product=product).exists():
-                raise serializers.ValidationError('You have already reviewed this product.')
+        user = request.user
+        
+        if Review.objects.filter(user=user, product=product).exists():
+            raise serializers.ValidationError('You have already reviewed this product.')
         return attrs
 
 
@@ -64,13 +65,20 @@ class ProductListSerializer(serializers.ModelSerializer):
             'created',
             'modified',
         )
-
+        
+class ProductFilterSerializer(serializers.Serializer):
+    query = serializers.CharField(required=False, allow_blank=True)
+    category = serializers.IntegerField(required=False)
+    min_price = serializers.DecimalField(required=False, max_digits=12, decimal_places=2)
+    max_price = serializers.DecimalField(required=False, max_digits=12, decimal_places=2)
+    location = serializers.CharField(required=False, allow_blank=True)
+    
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     product_info = ProductInfoSerializer(source='productinfo', read_only=True)
-    reviews = ReviewSerializer(many=True, read_only=True)
+    reviews = ProductReviewSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField()
     has_reviewed = serializers.SerializerMethodField()
 
@@ -97,18 +105,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
+        
         return Favorite.objects.filter(user=request.user, product=obj).exists()
 
     def get_has_reviewed(self, obj):
         request = self.context.get('request')
-        if not request or not request.user.is_authenticated:
-            return False
+        
         return Review.objects.filter(user=request.user, product=obj).exists()
 
 
-class ProductWriteSerializer(serializers.ModelSerializer):
+class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = (
