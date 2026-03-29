@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -128,7 +129,18 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ]
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # User stays logged in for 60 mins
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Can get a new access token for 1 day
+    'ROTATE_REFRESH_TOKENS': True,                   # Gives a new refresh token on use
+    'BLACKLIST_AFTER_ROTATION': True,                # Old refresh tokens are killed immediately
+    'AUTH_HEADER_TYPES': ('Bearer',),                # User must send "Authorization: Bearer <token>"
 }

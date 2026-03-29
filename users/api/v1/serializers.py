@@ -15,7 +15,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         extra_kwargs = {'profile_picture': {'required': False}}
 
 
-class UserMeSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     """Logged-in user plus nested profile (GET / PATCH / PUT /api/users/me/)."""
 
     profile = ProfileSerializer()
@@ -75,9 +75,50 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
 
-class PasswordChangeSerializer(serializers.Serializer):
+class ChangePasswordSerializer(serializers.Serializer):
     """POST /api/users/me/change-password/ — three fields; rules checked in the view."""
 
     current_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    
+    def validate_current_password(self, value):
+        """
+        Check if the 'current_password' entered matches the user's actual password.
+        """
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Your current password is incorrect.")
+        return value
+    
+    def validate(self, data):
+        """
+        Check if new passwords match and meet Django's security standards.
+        """
+        user = self.context['request'].user
+        new_pwd = data.get('new_password')
+        confirm_pwd = data.get('confirm_password')
+
+        # 1. Match check
+        if new_pwd != confirm_pwd:
+            raise serializers.ValidationError({
+                "confirm_password": "New passwords do not match."
+            })
+
+        # 2. Complexity check (Length, common patterns, etc.)
+        try:
+            validate_password(new_pwd, user=user)
+        except ValidationError as e:
+            raise serializers.ValidationError({
+                "new_password": list(e.messages)
+            })
+
+        return data
+
+
+class ProfilePictureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ('profile_picture',)
+        # The validations should always be handled by serializer
+        extra_kwargs = {'profile_picture': {"required": True}}
