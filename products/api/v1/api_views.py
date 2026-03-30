@@ -59,7 +59,7 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         if location:
             qs = qs.filter(location__icontains=location)
 
-        return qs.order_by('-created') 
+        return qs.order_by('created') 
         
        
     def get_serializer_class(self):
