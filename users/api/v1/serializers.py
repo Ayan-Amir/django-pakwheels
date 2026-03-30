@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 from users.models import Profile
 
@@ -40,31 +42,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return user
 
 
-class SignupSerializer(serializers.Serializer):
-    """POST /api/auth/signup/ — username + password only."""
-
-    username = serializers.CharField(max_length=150)
+class SignupSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
-
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError('Username is already taken.')
-        return value
+    
+    class Meta:
+        model = User
+        fields = ('username', 'password')
 
     def validate_password(self, value):
-        draft_user = User(username=self.initial_data.get('username', ''))
+        
+        username = self.initial_data.get('username', '')
+        user = User(username=username)
+        
         try:
-            validate_password(value, user=draft_user)
+            validate_password(value, user=user)
         except ValidationError as exc:
             raise serializers.ValidationError(list(exc.messages))
         return value
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            password=validated_data['password'],
-        )
+        user = User.objects.create_user(**validated_data)
         Profile.objects.create(user=user)
+        
         return user
 
 
@@ -73,8 +72,35 @@ class LoginSerializer(serializers.Serializer):
 
     username = serializers.CharField()
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    
+    def validate(self, data):
+        username = data.get('username')
+        password = data.get('password')
+        
+        if username and password:
+            user = authenticate(username=username, password=password)
+            
+            if not user:
+                raise serializers.ValidationError('Invalid username or password.')
+        
+        data['user'] = user
+        return data
 
 
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+    
+    def validate(self, attrs):
+       self.token = attrs['refresh']
+       return attrs
+   
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except TokenError:
+            raise serializers.ValidationError({"detail": "Token is invalid or expired."})
+    
+    
 class ChangePasswordSerializer(serializers.Serializer):
     """POST /api/users/me/change-password/ — three fields; rules checked in the view."""
 
@@ -105,7 +131,6 @@ class ChangePasswordSerializer(serializers.Serializer):
                 "confirm_password": "New passwords do not match."
             })
 
-        # 2. Complexity check (Length, common patterns, etc.)
         try:
             validate_password(new_pwd, user=user)
         except ValidationError as e:

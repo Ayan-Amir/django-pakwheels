@@ -1,6 +1,4 @@
-from django.contrib.auth import authenticate, update_session_auth_hash
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.contrib.auth import update_session_auth_hash
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -12,25 +10,30 @@ from users.api.v1.serializers import (
     ChangePasswordSerializer,
     SignupSerializer,
     UserProfileSerializer,
-    ProfilePictureSerializer
+    ProfilePictureSerializer,
+    LogoutSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import generics
 
 
-class SignupAPIView(APIView):
-    """Create a new user + empty profile."""
-
+class SignupAPIView(generics.CreateAPIView):
+    """
+    Create a new user + empty profile.
+    Automatically handles the POST request, validation, and saving.
+    """
+    
+    serializer_class = SignupSerializer
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        serializer = SignupSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+    def create(self, request, *args, **kwargs):
+        response =  super().create(request, *args, **kwargs)
         
-        return Response(
-            {'detail': 'Account created.', 'username': user.username},
-            status=status.HTTP_201_CREATED,
-        )
+        return response({
+            'detail': 'Account created.',
+            'username': response.data.get('username')
+        })
+    
 
 
 class LoginAPIView(APIView):
@@ -41,16 +44,8 @@ class LoginAPIView(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = serializer.validated_data['username']
-        password = serializer.validated_data['password']
         
-        user = authenticate(request, username=username, password=password)
-        
-        if user is None:
-            return Response(
-                {'detail': 'Invalid username or password.'},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        user = serializer.validated_data['user']
         
         # Generate JWT Tokens
         refresh = RefreshToken.for_user(user)
@@ -64,76 +59,83 @@ class LoginAPIView(APIView):
 
 
 class LogoutAPIView(APIView):
+    """
+    Blacklists the provided refresh token to log out the user.
+    """
     def post(self, request):
-        try:
-            refresh_token = request.data["refresh"]
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception:
-            return Response(
-                {"detail": "Invalid or missing refresh token."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-class UserRetrieveUpdateAPIView(APIView):
-    """Return or update the current user + profile (no generic class — one method per HTTP verb)."""
-
-    def get(self, request):
-        Profile.objects.get_or_create(user=request.user)
-        serializer = UserProfileSerializer(request.user)
-        return Response(serializer.data)
-
-    def put(self, request):
-        Profile.objects.get_or_create(user=request.user)
-        serializer = UserProfileSerializer(request.user, data=request.data)
+        serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def patch(self, request):
-        Profile.objects.get_or_create(user=request.user)
-        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+
+class UserRetrieveUpdateAPIView(generics.RetrieveUpdateAPIView):
+    """
+    Handles GET (retrieve), PUT (update), and PATCH (partial_update) 
+    automatically for the logged-in user.
+    """
+    
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        """
+        This method tells the view: 'Don't look for an ID in the URL, 
+        just use the person who is currently logged in.'
+        """
+        Profile.objects.get_or_create(user=self.request.user)
+        return self.request.user
+
+
+class ChangePasswordAPIView(generics.UpdateAPIView):
+    """
+    Generic-style view to update the user's password.
+    """
+    
+    serializer_class = ChangePasswordSerializer
+    
+    def get_object(self):
+        return self.request.user
+    
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
-class ChangePasswordAPIView(APIView):
-    """Verify current password, then set a new one (keeps session logged in)."""
-
-    def post(self, request):
-        serializer = ChangePasswordSerializer(data=request.data, context = {'request': request})
-        serializer.is_valid(raise_exception=True)
-
-        user = request.user
-
-        user.set_password(serializer.validated_data['new_password'])
-        user.save(update_fields=['password'])
+        
+        user = serializer.save()
         
         update_session_auth_hash(request, user)
         
-        return Response({'detail': 'Password changed successfully.'})
-
-
-class ProfilePictureUpdateDestroyAPIView(APIView):
-    """Upload (PATCH) or remove (DELETE) the profile image."""
-
-    def patch(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response(
+            {'detail': 'Password changed successfully.'},
+            status=status.HTTP_200_OK
+        )
         
-        serializer = ProfilePictureSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
 
-        url = request.build_absolute_uri(profile.profile_picture.url)
-        return Response({'profile_picture': url})
+class ProfilePictureUpdateDestroyAPIView(generics.UpdateAPIView):
+    """
+    Upload (PATCH) or remove (DELETE) the profile image using generics.
+    """
+    
+    serializer_class = ProfilePictureSerializer
 
-    def delete(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
+    def get_object(self):
+        profile, _ = Profile.objects.get_or_create(user=self.request.user)
+        return profile
+    
+    
+    def patch(self, request, *args, **kwargs):
+        response = super().patch(request, *args, **kwargs)
+        
+        profile = self.get_object()
         if profile.profile_picture:
-            profile.profile_picture.delete(save=True)
+            url = request.build_absolute_uri(profile.profile_picture.url)
+            response.data = {'profile_picture': url}
+        return response
+    
+    def delete(self, request, *args, **kwargs):
+        profile = self.get_object()
+        if profile.profile_picture:
+            profile.profile_picture.delete(save=False)
             profile.profile_picture = None
             profile.save(update_fields=['profile_picture'])
         return Response(status=status.HTTP_204_NO_CONTENT)
