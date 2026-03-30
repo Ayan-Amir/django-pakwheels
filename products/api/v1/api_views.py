@@ -82,24 +82,37 @@ class ProductDetailAPIView(generics.RetrieveAPIView):
         return context
 
 
-class ProductFavoriteAPIView(APIView):
+class ProductFavoriteAPIView(generics.GenericAPIView):
+    queryset = Product.objects.all()
+    
     def post(self, request, pk):
-        product = get_object_or_404(Product.objects.all(), pk=pk)
-        favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
+        product = self.get_object()
+        
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user, 
+            product=product
+        )
+        
         if not created:
             favorite.delete()
             return Response({'favorited': False})
+            
         return Response({'favorited': True})
 
 
-class ProductReviewAPIView(APIView):
-    def post(self, request, pk):
-        product = get_object_or_404(Product.objects.all(), pk=pk)
-        serializer = ProductReviewSerializer(
-            data=request.data,
-            context={'request': request, 'product': product},
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user, product=product)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class ProductReviewAPIView(generics.CreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ProductReviewSerializer
+    
+    def get_serializer_context(self):
+        """
+        Pass the product and request into the serializer context.
+        This is required for your 'already reviewed' validation logic.
+        """
+        context = super().get_serializer_context()
+        context['product'] = get_object_or_404(Product, pk=self.kwargs.get('pk'))
+        return context
+
+    def perform_create(self, serializer):
+        product = get_object_or_404(Product, pk=self.kwargs.get('pk'))
+        serializer.save(user=self.request.user, product=product)
