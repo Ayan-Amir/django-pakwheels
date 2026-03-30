@@ -38,7 +38,7 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         
         filters = filter_serializer.validated_data
         
-        text = filters.get('query') or ''
+        text = filters.get('query')
         category_id = filters.get('category')
         min_price = filters.get('min_price')
         max_price = filters.get('max_price')
