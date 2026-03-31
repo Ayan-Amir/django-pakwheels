@@ -12,7 +12,21 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
-from decouple import config
+import os
+import importlib
+
+decouple_module = importlib.util.find_spec('decouple')
+
+if decouple_module:
+    config = importlib.import_module('decouple').config
+else:
+    def config(key, default=None, cast=None):
+        value = os.getenv(key, default)
+        if cast is None:
+            return value
+        if cast is bool:
+            return str(value).lower() in ('1', 'true', 'yes', 'on')
+        return cast(value)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -149,3 +163,11 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,                # Old refresh tokens are killed immediately
     'AUTH_HEADER_TYPES': ('Bearer',),                # User must send "Authorization: Bearer <token>"
 }
+
+# Celery settings
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://127.0.0.1:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE

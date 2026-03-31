@@ -14,6 +14,7 @@ from products.api.v1.serializers import (
     ProductReviewSerializer,
     ProductFilterSerializer
 )
+from products.tasks import create_product_task
 
 
 class CategoryListAPIView(generics.ListAPIView):
@@ -66,6 +67,31 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return ProductCreateSerializer
         return ProductListSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        product_payload = {
+            'title': validated_data['title'],
+            'price': str(validated_data['price']),
+            'location': validated_data['location'],
+            'lat': str(validated_data['lat']) if validated_data.get('lat') is not None else None,
+            'lng': str(validated_data['lng']) if validated_data.get('lng') is not None else None,
+            'status': validated_data['status'],
+            'description': validated_data['description'],
+            'category_id': validated_data['category'].id if validated_data.get('category') else None,
+        }
+
+        task = create_product_task.delay(product_payload)
+
+        return Response(
+            {
+                'message': 'Product creation has been queued.',
+                'task_id': task.id,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class ProductDetailAPIView(generics.RetrieveAPIView):
