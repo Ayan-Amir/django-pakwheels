@@ -8,8 +8,8 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.views.decorators.http import require_POST
 
-from .forms import UserInfoForm, ProfileInfoForm, ProfilePictureForm, PasswordChangeForm
-from .models import Profile
+from users.forms import UserInfoForm, ProfileInfoForm, ProfilePictureForm, PasswordChangeForm
+from users.models import Profile
 
 
 def signup_view(request):

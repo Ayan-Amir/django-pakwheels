@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'users',
     'products',
     'django_extensions',
@@ -125,3 +128,24 @@ LOGOUT_REDIRECT_URL = 'login'
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(
+        seconds=config('JWT_ACCESS_TOKEN_LIFETIME_SECONDS', default=3600, cast=int)
+    ),  # User stays logged in for 60 mins
+    'REFRESH_TOKEN_LIFETIME': timedelta(
+        seconds=config('JWT_REFRESH_TOKEN_LIFETIME_SECONDS', default=86400, cast=int)
+    ),    # Can get a new access token for 1 day
+    'ROTATE_REFRESH_TOKENS': True,                   # Gives a new refresh token on use
+    'BLACKLIST_AFTER_ROTATION': True,                # Old refresh tokens are killed immediately
+    'AUTH_HEADER_TYPES': ('Bearer',),                # User must send "Authorization: Bearer <token>"
+}

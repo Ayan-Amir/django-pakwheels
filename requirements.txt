@@ -1,4 +1,6 @@
 asgiref==3.11.1
 Django==6.0.2
+django-extensions==4.1
+djangorestframework==3.16.0
 Pillow==11.1.0
 sqlparse==0.5.5
