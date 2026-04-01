@@ -1,12 +1,12 @@
-from celery.result import AsyncResult
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, views
 from rest_framework.response import Response
 
-from products.models import Category, Favorite, Product, Review
+from products.models import Category, Favorite, GlobalStatsSnapshot, Product, Review
 from products.api.v1.serializers import (
     CategorySerializer,
+    GlobalStatsSnapshotSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
     ProductCreateSerializer,
@@ -132,3 +132,17 @@ class GlobalStatsAPIView(views.APIView):
             },
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class GlobalStatsLatestAPIView(generics.RetrieveAPIView):
+    serializer_class = GlobalStatsSnapshotSerializer
+
+    def get_object(self):
+        return GlobalStatsSnapshot.objects.latest('created')
+
+
+class GlobalStatsHistoryAPIView(generics.ListAPIView):
+    serializer_class = GlobalStatsSnapshotSerializer
+
+    def get_queryset(self):
+        return GlobalStatsSnapshot.objects.order_by('-created')

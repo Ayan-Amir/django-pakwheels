@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductImage, ProductInfo, Favorite, Review
+from .models import Category, Product, ProductImage, ProductInfo, Favorite, Review, GlobalStatsSnapshot
 
 
 class ProductImageInline(admin.TabularInline):
@@ -56,3 +56,10 @@ class ReviewAdmin(admin.ModelAdmin):
     list_filter = ('rating',)
     search_fields = ('user__username', 'product__title', 'review')
     raw_id_fields = ('product', 'user')
+
+
+@admin.register(GlobalStatsSnapshot)
+class GlobalStatsSnapshotAdmin(admin.ModelAdmin):
+    list_display = ('id', 'total_products', 'total_reviews', 'total_favorites', 'created')
+    list_filter = ('created',)
+    ordering = ('-created',)
