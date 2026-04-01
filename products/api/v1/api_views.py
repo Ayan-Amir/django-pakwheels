@@ -1,9 +1,8 @@
+from celery.result import AsyncResult
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, status, views
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from products.models import Category, Favorite, Product, Review
 from products.api.v1.serializers import (
@@ -14,7 +13,7 @@ from products.api.v1.serializers import (
     ProductReviewSerializer,
     ProductFilterSerializer
 )
-from products.tasks import create_product_task
+from products.tasks import collect_global_stats_task
 
 
 class CategoryListAPIView(generics.ListAPIView):
@@ -71,29 +70,10 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        validated_data = serializer.validated_data
-        product_payload = {
-            'title': validated_data['title'],
-            'price': str(validated_data['price']),
-            'location': validated_data['location'],
-            'lat': str(validated_data['lat']) if validated_data.get('lat') is not None else None,
-            'lng': str(validated_data['lng']) if validated_data.get('lng') is not None else None,
-            'status': validated_data['status'],
-            'description': validated_data['description'],
-            'category_id': validated_data['category'].id if validated_data.get('category') else None,
-        }
-
-        task = create_product_task.delay(product_payload)
-
-        return Response(
-            {
-                'message': 'Product creation has been queued.',
-                'task_id': task.id,
-            },
-            status=status.HTTP_202_ACCEPTED,
-        )
-
-
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 class ProductDetailAPIView(generics.RetrieveAPIView):
     queryset = Product.objects.select_related('category', 'productinfo').prefetch_related(
         'images',
@@ -113,7 +93,6 @@ class ProductFavoriteAPIView(generics.GenericAPIView):
     
     def post(self, request, pk):
         product = self.get_object()
-        
         favorite, created = Favorite.objects.get_or_create(
             user=request.user, 
             product=product
@@ -122,7 +101,7 @@ class ProductFavoriteAPIView(generics.GenericAPIView):
         if not created:
             favorite.delete()
             return Response({'favorited': False})
-            
+
         return Response({'favorited': True})
 
 
@@ -142,3 +121,14 @@ class ProductReviewAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         product = get_object_or_404(Product, pk=self.kwargs.get('pk'))
         serializer.save(user=self.request.user, product=product)
+
+class GlobalStatsAPIView(views.APIView):
+    def get(self, request):
+        task = collect_global_stats_task.delay()
+        return Response(
+            {
+                "message": "Global stats task queued.",
+                "task_id": task.id,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
