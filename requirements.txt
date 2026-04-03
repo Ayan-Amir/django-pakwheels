@@ -1,6 +1,7 @@
 asgiref==3.11.1
 celery==5.6.3
 Django==6.0.2
+django-celery-beat==2.8.1
 django-extensions==4.1
 djangorestframework==3.16.0
 Pillow==11.1.0

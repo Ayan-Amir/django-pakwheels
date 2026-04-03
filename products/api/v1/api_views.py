@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status, views
+from rest_framework import generics, status
 from rest_framework.response import Response
 
 from products.models import Category, Favorite, GlobalStatsSnapshot, Product, Review
@@ -13,9 +13,6 @@ from products.api.v1.serializers import (
     ProductReviewSerializer,
     ProductFilterSerializer
 )
-from products.tasks import collect_global_stats_task
-
-
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
@@ -121,18 +118,6 @@ class ProductReviewAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         product = get_object_or_404(Product, pk=self.kwargs.get('pk'))
         serializer.save(user=self.request.user, product=product)
-
-class GlobalStatsAPIView(views.APIView):
-    def get(self, request):
-        task = collect_global_stats_task.delay()
-        return Response(
-            {
-                "message": "Global stats task queued.",
-                "task_id": task.id,
-            },
-            status=status.HTTP_202_ACCEPTED,
-        )
-
 
 class GlobalStatsLatestAPIView(generics.RetrieveAPIView):
     serializer_class = GlobalStatsSnapshotSerializer
