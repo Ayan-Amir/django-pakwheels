@@ -27,12 +27,12 @@ class SignupAPIView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
-        response =  super().create(request, *args, **kwargs)
-        
-        return response({
+        response = super().create(request, *args, **kwargs)
+        response.data = {
             'detail': 'Account created.',
-            'username': response.data.get('username')
-        })
+            'username': response.data.get('username'),
+        }
+        return response
     
 
 
