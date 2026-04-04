@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from products.models import Category, Favorite, Product, ProductImage, ProductInfo, Review
+from products.models import Category, Favorite, GlobalStatsSnapshot, Product, ProductImage, ProductInfo, Review
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -127,3 +127,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'description',
             'category',
         )
+
+
+class GlobalStatsSnapshotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GlobalStatsSnapshot
+        fields = ('id', 'total_products', 'total_reviews', 'total_favorites', 'created', 'modified')
+        read_only_fields = ('id', 'created', 'modified')

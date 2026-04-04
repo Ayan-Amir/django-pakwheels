@@ -1,21 +1,18 @@
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
-from products.models import Category, Favorite, Product, Review
+from products.models import Category, Favorite, GlobalStatsSnapshot, Product, Review
 from products.api.v1.serializers import (
     CategorySerializer,
+    GlobalStatsSnapshotSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
     ProductCreateSerializer,
     ProductReviewSerializer,
     ProductFilterSerializer
 )
-
-
 class CategoryListAPIView(generics.ListAPIView):
     queryset = Category.objects.all().order_by('name')
     serializer_class = CategorySerializer
@@ -67,7 +64,13 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
             return ProductCreateSerializer
         return ProductListSerializer
 
-
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 class ProductDetailAPIView(generics.RetrieveAPIView):
     queryset = Product.objects.select_related('category', 'productinfo').prefetch_related(
         'images',
@@ -87,7 +90,6 @@ class ProductFavoriteAPIView(generics.GenericAPIView):
     
     def post(self, request, pk):
         product = self.get_object()
-        
         favorite, created = Favorite.objects.get_or_create(
             user=request.user, 
             product=product
@@ -96,7 +98,7 @@ class ProductFavoriteAPIView(generics.GenericAPIView):
         if not created:
             favorite.delete()
             return Response({'favorited': False})
-            
+
         return Response({'favorited': True})
 
 
@@ -116,3 +118,16 @@ class ProductReviewAPIView(generics.CreateAPIView):
     def perform_create(self, serializer):
         product = get_object_or_404(Product, pk=self.kwargs.get('pk'))
         serializer.save(user=self.request.user, product=product)
+
+class GlobalStatsLatestAPIView(generics.RetrieveAPIView):
+    serializer_class = GlobalStatsSnapshotSerializer
+
+    def get_object(self):
+        return GlobalStatsSnapshot.objects.latest('created')
+
+
+class GlobalStatsHistoryAPIView(generics.ListAPIView):
+    serializer_class = GlobalStatsSnapshotSerializer
+
+    def get_queryset(self):
+        return GlobalStatsSnapshot.objects.order_by('-created')

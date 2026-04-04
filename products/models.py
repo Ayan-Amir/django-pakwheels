@@ -75,3 +75,9 @@ class Review(TimeStampedModel):
 
     def __str__(self):
         return f"{self.product.title} - {self.rating}"
+
+
+class GlobalStatsSnapshot(TimeStampedModel):
+    total_products = models.PositiveIntegerField(default=0)
+    total_reviews = models.PositiveIntegerField(default=0)
+    total_favorites = models.PositiveIntegerField(default=0)
